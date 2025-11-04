@@ -515,7 +515,7 @@ class DASIterableDataset(IterableDataset):
             "zerophase": True,
         },
         ## continuous data
-        system=None,  # "eqnet" or "optasense" or None
+        system=None,  # "eqnet" or "neubrex" or "optasense" or None
         cut_patch=False,
         rank=0,
         world_size=1,
@@ -635,12 +635,25 @@ class DASIterableDataset(IterableDataset):
                                 fs = meta["Acquisition/Raw[0]"].attrs["OutputDataRate"]
                                 attrs["dx_m"] = dx
                                 attrs["dt_s"] = 1.0 / fs
+
+                        elif self.system == "neubrex":
+                            dataset = meta["Acoustic"]
+                            h5_attrs = dataset.attrs
+
+                            nt, nx = dataset.shape
+                            dx = h5_attrs["SpatialSamplingInterval"]
+                            dt = h5_attrs["TimeSamplingInterval(seconds)"]
+                            fs = 1 / dt
+                            attrs = {}
+                            attrs["dx_m"] = dx
+                            attrs["dt_s"] = dt
+
                         else:
                             nx, nt = meta["data"].shape
                             attrs = dict(meta["data"].attrs)
                 if self.resample_time and ("dt_s" in attrs):
                     if (attrs["dt_s"] != 0.01) and (int(round(1.0 / attrs["dt_s"])) % 100 == 0):
-                        nt = int(nt / round(0.01 / attrs["dt_s"]))
+                        nt = int(nt / round(0.01 / attrs["dt_s"]))           
 
             elif self.format == "segy":
                 print("Start reading segy file")
@@ -831,6 +844,7 @@ class DASIterableDataset(IterableDataset):
                             sample["dx_m"] = dataset.attrs["dx_m"]
                         else:
                             sample["dx_m"] = self.dx
+
             elif (self.format == "h5") and (self.system == "optasense"):
                 with fsspec.open(file, "rb") as fs:
                     with h5py.File(fs, "r") as fp:
@@ -862,6 +876,37 @@ class DASIterableDataset(IterableDataset):
 
                         data = dataset[()]  # (nx, nt)
                         data = np.gradient(data, axis=-1, edge_order=2) / sample["dt_s"]
+
+            elif (self.format == "h5") and (self.system == "neubrex"):
+                with fsspec.open(file, "rb") as fs:
+                    with h5py.File(fs, "r") as fp:
+                        
+                        dataset = fp["Acoustic"]
+                        h5_attrs = dataset.attrs
+                        
+                        dx = h5_attrs["SpatialSamplingInterval"]
+                        dt = h5_attrs["TimeSamplingInterval(seconds)"]
+                        fs = 1 / dt
+
+                        begin_time = datetime.fromisoformat(h5_attrs["ISO8601TimeStamp"])
+                        
+                        sample["dx_m"] = dx
+                        sample["dt_s"] = dt
+                        sample["begin_time"] = begin_time
+
+                        nt, nx = dataset.shape
+                        sample["nx"] = nx
+                        sample["nt"] = nt
+
+                        ## check existing
+                        existing = self.check_existing(file, sample)
+                        if self.skip_existing and existing:
+                            print(f"Skip existing file {file}")
+                            continue
+                        
+                        # need to transpose the dataset since Neubrex HDF5 format is (nt, nx)
+                        data = dataset[()].T  # (nt, nx)
+
 
             elif self.format == "segy":
                 meta = {}

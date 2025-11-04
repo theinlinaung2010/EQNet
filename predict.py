@@ -509,7 +509,7 @@ def get_args_parser(add_help=True):
     parser.add_argument("--resample_time", action="store_true", help="If resample time for continuous data")
     parser.add_argument("--resample_space", action="store_true", help="If resample space for continuous data")
     parser.add_argument(
-        "--system", type=str, default=None, help="The name of system of different system: optasense, eqnet, or None"
+        "--system", type=str, default=None, help="The name of system of different system: neubrex, optasense, eqnet, or None"
     )
     parser.add_argument("--location", type=str, default=None, help="The name of systems at location")
     parser.add_argument("--skip_existing", action="store_true", help="Skip existing files")
