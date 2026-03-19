@@ -2,6 +2,7 @@
 *.pyc
 *.pth
 *.h5
+*.png
 
 output*/
 Trash/

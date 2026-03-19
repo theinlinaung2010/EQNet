@@ -22,16 +22,17 @@ def moving_normalize(data, filter=1024, stride=128):
     # pad1 = pad // 2
     # pad2 = pad - pad1
     padding = filter // 2
+    pad_mode = "reflect" if padding < nt else "constant"
 
     with torch.no_grad():
         # data_ = F.pad(data, (0, 0, pad1, pad2), mode="reflect")
-        data_ = F.pad(data, (0, 0, padding, padding), mode="reflect")
+        data_ = F.pad(data, (0, 0, padding, padding), mode=pad_mode)
         mean = F.avg_pool2d(data_, kernel_size=(filter, 1), stride=(stride, 1))
         mean = F.interpolate(mean, scale_factor=(stride, 1), mode="bilinear", align_corners=False)[:, :, :nt, :nx]
         data -= mean
 
         # data_ = F.pad(data, (0, 0, pad1, pad2), mode="reflect")
-        data_ = F.pad(data, (0, 0, padding, padding), mode="reflect")
+        data_ = F.pad(data, (0, 0, padding, padding), mode=pad_mode)
         # std = (F.lp_pool2d(data_, norm_type=2, kernel_size=(filter, 1), stride=(stride, 1)) / ((filter) ** 0.5))
         std = F.avg_pool2d(torch.abs(data_), kernel_size=(filter, 1), stride=(stride, 1))
         std = F.interpolate(std, scale_factor=(stride, 1), mode="bilinear", align_corners=False)[:, :, :nt, :nx]

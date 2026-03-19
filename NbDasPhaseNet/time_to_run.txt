@@ -1,0 +1,16 @@
+## Jupyter
+
+python ../predict.py --model phasenet_das --data_list=files.txt  --data_path ./strainrate --result_path ./results --format=h5  --batch_size 1 --workers 0 --system neubrex
+
+Time range 10 sec
+No downsampling (original 500 sps)
+10149 channels
+Time to run inference: 26 sec (GPU), N/A:crashed (CPU)
+
+Time range 10 sec
+Downsampled 100 sps
+10149 channels
+Time to run inference: 10 sec (GPU), 9 sec (CPU)
+
+
+
